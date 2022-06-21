@@ -1,0 +1,450 @@
+#! /usr/bin/env bash
+
+config_path="${HOME}/.config/incent"
+config_file="${config_path}/config.yml"
+
+detach=false
+local_container_name="incent_local"
+
+usage() {
+  echo "Usage: incent [OPTIONS] COMMAND
+
+Options:
+  General:
+    -h  Display this usage information
+
+  API:
+    -p  Program-Set ID
+    -e  Endpoint (e.g. 'calculations/bulk', 'calculations', 'incentives', 'qualification_results', 'calculations/stream')
+    -f  Path to request JSON
+
+  Metadata:
+    -p  Program-Set ID
+
+  API|Metadata|Token:
+    -E  Environment ('stage' or 'prod'; default 'stage')
+
+  Calculate:
+    -p  Program-Set ID
+    -f  Path to request JSON
+
+  Config:
+    init  Initialize a config file if one is not present
+    list  List current configuration settings
+
+  Local:
+    down  Tear down a currently running local instance of the incent-api
+    logs  Show the logs for the locally running instance
+    up    Run the incent-api locally in a container
+      -d  Run in a detached state
+
+Commands:
+  api            Send GET or POST requests to the Incent API (e.g. 'metadata/products', 'calculations/bulk')
+  config         Perform configuration functions given by sub-command (e.g. init, list)
+  calculate      Send a calculation request to the Incent API
+  local          Run an instance of the incent-api image locally
+  metadata       Generate a CSV report listing all configured program metadata in given program-set
+  token          Generate an Auth0 token
+
+Usage examples:
+  API:
+    Send GET or POST requests to the Incent API
+    Defaults to endpoint 'metadata/calculators' and enviroment 'stage':
+    > incent -p [program-set-id] api
+    # or
+    > incent -E prod -p [program-set-id] -e metadata/products api
+
+    Send POST request with request json:
+    > incent -E prod -p [program-set-id] -e calculations/bulk -f request.json api
+
+  Calculate:
+    Calculate request in staging:
+    > incent -p [program-set-id] -f request.json calculate
+    # or
+    > incent -E stage -p [program-set-id] -f request.json calculate
+
+  Config:
+    Establish a configuration file:
+    > incent config init
+    Print current configuration settings:
+    > incent config list
+
+  Local:
+    Run the incent-api locally in a container
+    > incent local up
+    Run in a detached state
+    > incent -d local up
+    Tear down a currently running local instance of the incent-api
+    > incent local down
+    View the logs
+    > incent local logs
+
+  Metadata:
+    Generate report in production:
+    > incent -E prod -p [program-set-id] metadata
+
+  Token:
+    Retrieve an Auth0 token for staging:
+    > incent token
+    Retrieve an Auth0 token for production:
+    > incent -E prod token"
+}
+
+secrets_not_available() {
+    echo "Secrets not found.
+
+  - have you configured incent? > incent config init
+"
+}
+
+token() {
+  local audience="${environment:-stage}"
+
+  if [ "${audience}" = "dev" ]; then
+    audience="stage"
+  fi
+
+  environment_key="${audience^^}"
+
+  if [[ "${audience}" = pr-* ]]; then
+    # review-apps use convention: tk-stage-incent-api-pr-559
+    app_suffix="-$audience"
+    audience="stage"
+    environment_key="REVIEW"
+  fi
+
+  audience_uri="https://tk-$audience-incent-api$app_suffix.herokuapp.com/"
+
+  client_id=$(eval "echo \$AUTH0_CLIENT_ID_${environment_key}")
+  client_secret=$(eval "echo \$AUTH0_CLIENT_SECRET_${environment_key}")
+
+  if [ -z "${client_id}" ] || [ -z "${client_secret}" ]; then
+    secrets_not_available
+    exit 3
+  fi
+
+  curl \
+    --silent \
+    --request POST \
+    --url https://tkxs.auth0.com/oauth/token \
+    --header 'content-type: application/json' \
+    --data "
+      {
+        \"client_id\": \"$client_id\",
+        \"client_secret\": \"$client_secret\",
+        \"audience\": \"$audience_uri\",
+        \"grant_type\": \"client_credentials\"
+      }
+    " | jq --raw-output '.access_token'
+}
+
+error_check() {
+  case "${?}" in
+    0)
+      # all good
+      ;;
+    3)
+      secrets_not_available
+      exit 3
+      ;;
+    *)
+      echo "Unknown error"
+      exit 1
+  esac
+}
+
+api() {
+  verb="GET"
+  endpoint="${endpoint:-metadata/calculators}"
+
+  [[ "${endpoint}" = "programs" ]] && endpoint='programs?schema=legacy'
+
+  case "${endpoint}" in
+    "calculations/bulk" | "calculations" | "incentives" | "qualification_results" | "calculations/stream" )
+ 
+      verb="POST"
+ 
+      request_json="@${file}"
+ 
+      ;;
+  esac
+
+  make_incent_request | jq
+}
+
+make_incent_request() {
+  token="$(token)"
+  environment="${environment:-stage}"
+  base_url=""
+
+  error_check
+
+  if [ "${environment}" == "dev" ]; then
+    base_url="http://localhost:9292"
+  elif [[ "${environment}" = pr-* ]]; then
+    base_url="https://tk-stage-incent-api-${environment}.herokuapp.com"
+  else
+    base_url="https://tk-$environment-incent-api.herokuapp.com"
+  fi
+
+  curl "${base_url}"/v2/"${endpoint}" \
+    -s \
+    -H "Content-Type: application/json" \
+    -H "Program-Set-Id: ${program_set_id}" \
+    -H "Authorization: Bearer ${token}" \
+    -X "${verb}" \
+    -d "${request_json}"
+}
+
+calculate() {
+  endpoint="calculations"
+  verb="POST"
+
+  if [ -z "${file}" ]; then
+    echo "-f request JSON file is required for \`calculate\` command"
+    exit 1
+  else
+    request_json="@${file}"
+  fi
+  make_incent_request | jq
+}
+
+metadata() {
+  endpoint="programs"
+  output="$(mktemp "$TMPDIR/${program_set_id}.metadata.$(uuidgen).csv")"
+
+  response="$(api)"
+
+  error_check
+
+  if [[ "${response}" == *"A922"* ]]; then
+    echo "Error, has this program-set been deployed?"
+    exit 1
+  fi
+
+  echo "${response}"                                                                                                     \
+    |  jq                                                                                                                \
+    --compact-output                                                                                                     \
+    --raw-output                                                                                                         \
+    '
+      map(
+        (
+          .metadata                                           # grab metadata
+          | from_entries                                      # convert from property bag to object
+          | map_values(tostring)                              # convert values to string (some are complex objects)
+        )
+        +
+        {
+          __key: .program,
+          __name: .name,
+          _strategy: .strategy,
+          _calculator: .calculator,
+          _safe_mode: .safe_mode,
+          _allow_negative_earnings: .allow_negative_earnings,
+          _uses_aggregate_on: .uses_aggregate_on
+        }                                                     # merge program details into flattened metadata object
+      )
+      | (map(keys) | add | unique) as $cols                   # grab unique list of keys for csv headers
+      | map(. as $row | $cols | map($row[.])) as $rows        # ensure each row has values for all columns (may be null)
+      | $cols, $rows[]                                        # output column headers then rows
+      | @csv                                                  # convert to CSV
+    '                                                                                                                    \
+    > "${output}"                                                                                                        \
+    && open "${output}"
+  }
+
+config_init() {
+  if [ -f "${config_file}" ]; then
+    echo "Config file already present, to re-initialize, please first delete it:"
+    echo
+    echo "rm ${config_file}"
+    exit 0
+  fi
+
+  mkdir -p "${config_path}"
+
+  echo "# location to install the incent CLI tool to when running 'incent update'
+install_path: \$HOME/bin/
+# absolute path of directory containing local copies of 'incent-gem' and 'incent-config-gem'?
+gems_path: \$HOME/src/gems/
+# path to the decrypted 'secrets.env' file from technekes/incent-api
+secrets_path: \$HOME/.config/incent/secrets.env
+" > "${config_file}"
+
+  echo "Default configuration written to: ${config_file}"
+}
+
+parse_config() {
+  install_path=$(yq eval '.install_path' "$config_file")
+  gems_path=$(yq eval '.gems_path' "$config_file")
+  secrets_path=$(yq eval '.secrets_path' "$config_file")
+
+
+  install_path="${install_path:-$HOME/bin}"
+  gems_path="${gems_path:-$HOME/src/gems}"
+  secrets_path="${secrets_path:-$HOME/.config/incent/secrets.env}"
+
+  install_path="${install_path/#\$HOME/$HOME}"
+  gems_path="${gems_path/#\$HOME/$HOME}"
+  secrets_path="${secrets_path/#\$HOME/$HOME}"
+
+  if [ ! -f "${secrets_path}" ]; then
+    echo "Configured secrets file not found: ${secrets_path}"
+    exit 1
+  fi
+
+  set -a
+  # shellcheck disable=1090
+  source "${secrets_path}"
+  set +a
+}
+
+local_up() {
+  local command="up"
+
+  if [ "${command}" = "up" ] && [ "${detach}" = true ]; then
+    command="${command} -d"
+  fi
+
+  # shellcheck disable=2086
+  echo "
+    version: '2.3'
+
+    services:
+      web:
+        image: technekes/incent-api:latest
+        container_name: $local_container_name
+        ports: ['9292:9292']
+        environment: { RACK_ENV: production }
+        env_file: $secrets_path
+  " | docker-compose --file - $command
+}
+
+local_down() {
+  docker rm --force $local_container_name
+}
+
+local_logs() {
+  docker logs --follow $local_container_name
+}
+
+while getopts "dDhe:E:f:i:p:r:s:" o; do
+  case "${o}" in
+    d)
+      detach=true
+      ;;
+    e)
+      endpoint=${OPTARG}
+      ;;
+    E)
+      environment=${OPTARG}
+      ;;
+    f)
+      file=${OPTARG}
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
+    p)
+      program_set_id=${OPTARG}
+      ;;
+    s)
+      script_override=${OPTARG}
+      ;;
+    *)
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
+command="${1}"
+
+missing_program_set_id() {
+  echo -e "Provide the '-p program_set_id' argument"
+}
+
+case "${command}" in
+  token)
+    parse_config
+    token
+    exit 0
+    ;;
+  api)
+    parse_config
+    program_set_id="${program_set_id}"
+    [ -z "${program_set_id}" ] && missing_program_set_id && exit 1
+    api
+    exit 0
+    ;;
+  calculate)
+    parse_config
+    program_set_id="${program_set_id}"
+    [ -z "${program_set_id}" ] && missing_program_set_id && exit 1
+    calculate
+    exit 0
+    ;;
+  metadata)
+    parse_config
+    program_set_id="${program_set_id}"
+    [ -z "${program_set_id}" ] && missing_program_set_id && exit 1
+    metadata
+    exit 0
+    ;;
+  local)
+    shift
+
+    parse_config
+
+    case "$@" in
+      up)
+        local_up
+        exit 0
+        ;;
+      down)
+        local_down
+        exit 0
+        ;;
+      logs)
+        local_logs
+        exit 0
+        ;;
+      *)
+        echo "Unknown sub-command provided to the 'local' command. Supported sub-commands are 'up', 'down', 'logs'"
+
+        exit 1
+        ;;
+    esac
+
+    exit 0
+    ;;
+  config)
+    shift
+
+    case "$@" in
+      init)
+        config_init
+        exit 0
+        ;;
+      list)
+        if [ -f "${config_file}" ]; then
+          echo "Current configuration at: ${config_file}"
+          echo
+
+          grep -v "^#" "${config_file}"
+        else
+          echo "Config file not found, please run: incent config init"
+        fi
+        exit 0
+        ;;
+      *)
+        echo "Unknown sub-command provided to the 'config' command. Supported sub-commands are 'init', 'list' and 'apply_hooks'"
+
+        exit 1
+        ;;
+    esac
+    ;;
+esac
+
+echo "Unknown command: ${command}. Use --help for a list of commands"
+exit 1

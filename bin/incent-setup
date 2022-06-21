@@ -1,0 +1,41 @@
+#! /usr/bin/env bash
+
+PATH=~/bin:$PATH
+config_path="${HOME}/.config/incent"
+
+install_dependencies() {
+  echo "Installing dependencies"
+  brew install bash gh jq yq
+}
+
+create_secrets() {
+  echo "Addinng secrets.env"
+
+  mkdir -p "${config_path}"
+
+  echo "
+  AUTH0_CLIENT_ID_STAGE=get from secret server
+  AUTH0_CLIENT_SECRET_STAGE=get from secret server
+  AUTH0_CLIENT_ID_PROD=get from secret server
+  AUTH0_CLIENT_SECRET_PROD=get from secret server
+  " > "${config_path}/secrets_temp.env"
+}
+
+incent() {
+  echo "Installing incent CLI"
+
+  echo "$(curl -s https://gist.githubusercontent.com/jasmineHundal/e663f7f5165515824e9e1a427b919690/raw/incent.sh)" > ~/bin/incent_sample
+
+  chmod +x ~/bin/incent_sample
+}
+
+config_details() {
+  echo "Config details"
+  incent_sample config init
+  incent_sample config list
+}
+
+install_dependencies
+create_secrets
+incent
+config_details
