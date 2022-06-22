@@ -1,12 +1,6 @@
 #! /usr/bin/env bash
 
-PATH=~/bin:$PATH
 config_path="${HOME}/.config/incent"
-
-install_dependencies() {
-  echo "Installing dependencies"
-  brew install bash gh jq yq
-}
 
 create_secrets() {
   echo "Addinng secrets.env"
@@ -35,7 +29,6 @@ config_details() {
   incent config list
 }
 
-install_dependencies
 create_secrets
 incent
 config_details
