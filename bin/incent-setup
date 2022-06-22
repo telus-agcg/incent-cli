@@ -24,7 +24,7 @@ create_secrets() {
 incent() {
   echo "Installing incent CLI"
 
-  echo "$(curl -s https://gist.githubusercontent.com/jasmineHundal/e663f7f5165515824e9e1a427b919690/raw/incent.sh)" > ~/bin/incent
+  echo "$(curl -s https://raw.githubusercontent.com/technekes/incent-cli/master/bin/incent)" > ~/bin/incent
 
   chmod +x ~/bin/incent
 }
