@@ -49,7 +49,6 @@ Commands:
 Usage examples:
   API:
     Send GET or POST requests to the Incent API
-    Defaults to endpoint 'metadata/calculators' and enviroment 'stage':
     > incent -p [program-set-id] api
     # or
     > incent -E prod -p [program-set-id] -e metadata/products api
@@ -106,13 +105,6 @@ token() {
 
   environment_key="${audience^^}"
 
-  if [[ "${audience}" = pr-* ]]; then
-    # review-apps use convention: tk-stage-incent-api-pr-559
-    app_suffix="-$audience"
-    audience="stage"
-    environment_key="REVIEW"
-  fi
-
   audience_uri="https://tk-$audience-incent-api$app_suffix.herokuapp.com/"
 
   client_id=$(eval "echo \$AUTH0_CLIENT_ID_${environment_key}")
@@ -155,7 +147,7 @@ error_check() {
 
 api() {
   verb="GET"
-  endpoint="${endpoint:-metadata/calculators}"
+  endpoint="${endpoint}"
 
   [[ "${endpoint}" = "programs" ]] && endpoint='programs?schema=legacy'
 
