@@ -11,17 +11,17 @@ brew install bash jq yq
 ```
 
 #### Linux
-```
-sh
-# install `jq`
+install `jq`
+```console
 # find appropriate version here: https://github.com/stedolan/jq/releases
 curl \
   --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
   --silent \
   --output /usr/bin/jq && \
   chmod +x /usr/bin/jq
-
-# install `yq`
+```
+ install `yq`
+```console
 # find appropriate version here: https://github.com/mikefarah/yq/releases
 curl \
   --location https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_amd64 \
