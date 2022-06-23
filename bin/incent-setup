@@ -24,9 +24,9 @@ install_incent() {
 
 config_details() {
   echo -e "\n\033[1mConfig details:\033[0m"
-  incent config init
+  $HOME/bin/incent config init
   echo
-  incent config list
+  $HOME/bin/incent config list
 }
 
 create_secrets
