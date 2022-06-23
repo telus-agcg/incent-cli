@@ -10,21 +10,52 @@ Incent CLI is a command-line interface to interact with the Incent API.
 brew install bash jq yq
 ```
 
+#### Linux
+```
+sh
+# install `jq`
+# find appropriate version here: https://github.com/stedolan/jq/releases
+curl \
+  --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
+  --silent \
+  --output /usr/bin/jq && \
+  chmod +x /usr/bin/jq
+
+# install `yq`
+# find appropriate version here: https://github.com/mikefarah/yq/releases
+curl \
+  --location https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_amd64 \
+  --silent \
+  --output /usr/bin/yq && \
+  chmod +x /usr/bin/yq
+```
+
 ## Installation
 Incent CLI can be setup with the one line command given below.
 
 ```console
 curl -sL https://raw.githubusercontent.com/technekes/incent-cli/master/bin/incent-setup | bash
 ```
-This script will install to `$HOME/bin`. If this is not on your `$PATH` then you will either need to add it to your `$PATH` or prefix the `incent` command with `$HOME/bin`. <br>
-(eg: `~/bin/incent -p 9a9e0c5c53264fd99a820d7bfd42389e -e /metadata/products api `)
+
+---
+**NOTE**
+
+This script will install to `$HOME/bin`. If this is not on your `$PATH` then you will either need to add it to your `$PATH` or prefix the `incent` command with `$HOME/bin`. (eg: `~/bin/incent --help`)
+
+Modifying `$PATH`:
+#### macOS
+
+```
+bash
+export PATH=$PATH:$HOME/bin
+```
+---
 
 ## Configuration
 
-* Setup the `secrets.env` file located at `~/.config/incent/secrects.env`.
-* Use `--help` for the CLI usage guide
+See the CLI &rarr; setup guide in [readme.com](https://readme.com/) for further instructions.
 
-## Usage Examples
+## Usage Example
 
 * Get the list of products in a program-set and output the first one.
   ```console
