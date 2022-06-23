@@ -3,7 +3,7 @@
 config_path="${HOME}/.config/incent"
 
 create_secrets() {
-  echo "Addinng secrets.env"
+  echo -e "\n\033[1mAddinng secrets.env\033[0m"
 
   mkdir -p "${config_path}"
 
@@ -13,8 +13,8 @@ create_secrets() {
   AUTH0_CLIENT_SECRET_PROD=get from secret server" > "${config_path}/secrets.env"
 }
 
-incent() {
-  echo "Installing incent CLI"
+install_incent() {
+  echo -e "\n\033[1mInstalling incent CLI\033[0m"
 
   echo "$(curl -s https://raw.githubusercontent.com/technekes/incent-cli/master/bin/incent)" > ~/bin/incent
 
@@ -22,11 +22,14 @@ incent() {
 }
 
 config_details() {
-  echo "Config details"
+  echo -e "\n\033[1mConfig details:\033[0m"
   incent config init
+  echo
   incent config list
 }
 
 create_secrets
-incent
+install_incent
 config_details
+
+echo -e "\033[1mIncent CLI installed, Try 'incent --help'!\033[0m"
