@@ -260,8 +260,7 @@ install_path: \$HOME/bin/
 # absolute path of directory containing local copies of 'incent-gem' and 'incent-config-gem'?
 gems_path: \$HOME/src/gems/
 # path to the decrypted 'secrets.env' file from technekes/incent-api
-secrets_path: \$HOME/.config/incent/secrets.env
-" > "${config_file}"
+secrets_path: \$HOME/.config/incent/secrets.env" > "${config_file}"
 
   echo "Default configuration written to: ${config_file}"
 }
