@@ -7,12 +7,10 @@ create_secrets() {
 
   mkdir -p "${config_path}"
 
-  echo "
-  AUTH0_CLIENT_ID_STAGE=get from secret server
+  echo "AUTH0_CLIENT_ID_STAGE=get from secret server
   AUTH0_CLIENT_SECRET_STAGE=get from secret server
   AUTH0_CLIENT_ID_PROD=get from secret server
-  AUTH0_CLIENT_SECRET_PROD=get from secret server
-  " > "${config_path}/secrets.env"
+  AUTH0_CLIENT_SECRET_PROD=get from secret server" > "${config_path}/secrets.env"
 }
 
 incent() {

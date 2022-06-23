@@ -11,7 +11,7 @@ brew install bash jq yq
 ```
 
 ## Installation
-Incent CLI can be setup with the one line command given below. The script below uses [Homebrew](https://brew.sh/).
+Incent CLI can be setup with the one line command given below.
 
 ```console
 curl -sL https://raw.githubusercontent.com/technekes/incent-cli/master/bin/incent-setup | bash
@@ -23,12 +23,6 @@ This script will install to `$HOME/bin`. If this is not on your `$PATH` then you
 
 * Setup the `secrets.env` file located at `~/.config/incent/secrects.env`.
 * Use `--help` for the CLI usage guide
-
-#### Extra
-  For using the `incent local` commands additional setup is required.
-
-  * Clone the `incent-api` repository
-  * Have docker installed and logged in
 
 ## Usage Examples
 
@@ -45,3 +39,14 @@ This script will install to `$HOME/bin`. If this is not on your `$PATH` then you
     "external_ids": []
   }
   ```
+
+---
+**NOTE**
+
+  #### Alpha
+  For using the `incent local` commands additional setup is required.
+
+  * Clone the `incent-api` repository
+  * Have docker installed and logged in
+
+---
