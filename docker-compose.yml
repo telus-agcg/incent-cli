@@ -1,0 +1,9 @@
+version: "2.3"
+
+services:
+  test: &default
+    build:
+      context: .
+    command: test
+    volumes:
+      - .:/code
