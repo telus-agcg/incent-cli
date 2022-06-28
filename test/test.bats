@@ -1,6 +1,5 @@
 #!/usr/bin/env bats
 
-
 @test "can run our script" {
   run bin/incent --help
   [ "${status}" -eq 0 ]
