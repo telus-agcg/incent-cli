@@ -7,10 +7,10 @@ create_secrets() {
 
   mkdir -p "${config_path}"
 
-  echo "AUTH0_CLIENT_ID_STAGE=get from secret server
-  AUTH0_CLIENT_SECRET_STAGE=get from secret server
-  AUTH0_CLIENT_ID_PROD=get from secret server
-  AUTH0_CLIENT_SECRET_PROD=get from secret server" > "${config_path}/secrets.env"
+  echo "AUTH0_CLIENT_ID_STAGE=uui8VoKJgLvWCppB88AQ7naDJX7uSx6A
+  AUTH0_CLIENT_SECRET_STAGE=copy from https://manage.auth0.com/dashboard/us/tkxs/applications/uui8VoKJgLvWCppB88AQ7naDJX7uSx6A
+  AUTH0_CLIENT_ID_PROD=4cDJFvy86VwKpSUAXmn8L4IkXEHx355L
+  AUTH0_CLIENT_SECRET_PROD=copy from https://manage.auth0.com/dashboard/us/tkxs/applications/4cDJFvy86VwKpSUAXmn8L4IkXEHx355L" > "${config_path}/secrets.env"
 }
 
 install_incent() {
