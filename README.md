@@ -53,7 +53,8 @@ export PATH=$PATH:$HOME/bin
 
 ## Configuration
 
-See the CLI &rarr; setup guide in [readme.com](https://readme.com/) for further instructions.
+* Setup the `secrets.env` file located at `~/.config/incent/secrects.env`.
+* Use `--help` for the CLI usage guide
 
 ## Usage Example
 
